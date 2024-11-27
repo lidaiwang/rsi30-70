@@ -162,7 +162,7 @@ class okex_rsi:
         df = self.RSI2(df)
         # logger.info(df)
         # logger.info(df.iloc[298])
-        return df.iloc[limit_num -1 ], df.iloc[limit_num-2]
+        return df.iloc[limit_num - 1], df.iloc[limit_num - 2]
 
     def okex_can(self):
         api_key = self.api_key
@@ -277,6 +277,7 @@ class okex_rsi:
             self.rsi_list = config['rsi_list']
 
     ff = True
+
     def loop(self):
         logger.info(" ")
         logger.info(" ")
@@ -305,20 +306,24 @@ class okex_rsi:
             open_price = re1['open']
 
             for rsi_, num1 in rsi_list.items():
-                a = Decimal(str(num1 - nn ))
+                if rsi_ <= 30:
+                    a = Decimal(str(num1 - nn))
+                else:
+                    a = Decimal(str(num1))
+
                 b = Decimal(str(init_num))
                 num = str(a * b)
 
                 if float(num) <= 0:
                     continue
 
-
                 rsi_price = re1['RSI_' + str(rsi_)]
 
                 ## 当前的rsi对应的价格 和开盘价格小于千n  就跳过这个价格
                 diff_p = abs(float(rsi_price) - float(open_price)) / float(open_price)
                 if diff_p < 0.0015:
-                    logger.info(f"当前价格和开盘价格相差太小-跳过{coin} {rsi_} diff_p{diff_p}  open_price {open_price}  rsi_price {rsi_price}")
+                    logger.info(
+                        f"当前价格和开盘价格相差太小-跳过{coin} {rsi_} diff_p{diff_p}  open_price {open_price}  rsi_price {rsi_price}")
                     continue
 
                 ## 买单
@@ -435,4 +440,3 @@ if len_ >= 2:
         getattr(class_, func)()
     else:
         logger.info("no fun")
-
