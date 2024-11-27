@@ -12,7 +12,7 @@ import random
 import sys
 import requests
 from decimal import Decimal, getcontext
-
+import json
 
 
 class okex_rsi:
@@ -266,10 +266,17 @@ class okex_rsi:
     rsi_list = None
 
     def __init__(self):
-        pass
+        config_fil = './config.json'
+        with open(config_fil, 'r') as f:
+            config = json.load(f)
+            self.api_key = config['api_key']
+            self.secret_key = config['secret_key']
+            self.passphrase = config['passphrase']
+
+            self.coin_list = config['coin_list']
+            self.rsi_list = config['rsi_list']
 
     ff = True
-
     def loop(self):
         logger.info(" ")
         logger.info(" ")
@@ -282,6 +289,7 @@ class okex_rsi:
         self.okex_can()
 
         dic = []
+        nn = 1
         for coin, init_num in coin_list.items():
             ##每次启动的时候  设置仓位杠杆
             if self.ff:
@@ -295,18 +303,15 @@ class okex_rsi:
                 continue
             last_RSI = re2['RSI']
             open_price = re1['open']
+
             for rsi_, num1 in rsi_list.items():
-                a = Decimal(str(num1))
+                a = Decimal(str(num1 - nn ))
                 b = Decimal(str(init_num))
                 num = str(a * b)
 
+                if float(num) <= 0:
+                    continue
 
-                if rsi_ <= 30:
-                    a = Decimal(str(num1 - 1))
-                    b = Decimal(str(init_num))
-                    num = str(a * b)
-                    if float(num) <= 0 :
-                        continue
 
                 rsi_price = re1['RSI_' + str(rsi_)]
 
