@@ -116,7 +116,7 @@ class okex_rsi:
                 df.loc[index, 'RSI'] = rsi
 
                 for rr1 in rsi_list:
-                    rsi_ = rr1
+                    rsi_ = int(rr1)
                     rsi30 = self.rsi_to(rsi_, rsi_s, s_1, s_2, close_1)
                     df.loc[index, 'RSI_' + str(rr1)] = rsi30
 
@@ -266,9 +266,14 @@ class okex_rsi:
     rsi_list = None
 
     def __init__(self):
+        ## defi
         config_fil = './config.json'
         with open(config_fil, 'r') as f:
-            config = json.load(f)
+            data = json.load(f)
+            config = data['okx']
+
+            logger.info(config)
+
             self.api_key = config['api_key']
             self.secret_key = config['secret_key']
             self.passphrase = config['passphrase']
@@ -306,6 +311,7 @@ class okex_rsi:
             open_price = re1['open']
 
             for rsi_, num1 in rsi_list.items():
+                rsi_ = int(rsi_)
                 if rsi_ <= 30:
                     a = Decimal(str(num1 - nn))
                 else:
