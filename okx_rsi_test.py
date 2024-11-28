@@ -127,16 +127,10 @@ class okex_rsi:
     ##业务综合
     def get_k_line(self, coin='link', bar='5m'):
         # client = MarketData.MarketAPI(debug=True)
-        if coin in ['eth1', 'btc1']:
-            instId = (coin + '-USD-SWAP').upper()
-        else:
-            instId = (coin + '-USDT-SWAP').upper()
+        instId = (coin + '-USDT-SWAP').upper()
         # re = client.get_candlesticks(instId=instId, bar=bar, limit=300)
-        limit_num = 80
+        limit_num = 44
         url = f'{self.okex_path}/api/v5/market/candles?instId={instId}&bar=5m&limit={limit_num}'
-        # re1 = requests.get(url)
-        # re = re1.json()
-
         s = requests.session()
         s.keep_alive = False
         re1 = s.get(url)
@@ -155,13 +149,9 @@ class okex_rsi:
         df = DataFrame(data=data1, columns=['time', 'open', 'high', 'low', 'close', 'a', 'b', 'c', 'confirm', 'd_t'])
         df = df[['time', 'open', 'high', 'low', 'close', 'confirm', 'd_t']]
         df = df.sort_values('time', ascending=True)
-
         df = df.set_index('d_t')
-        # logger.info(df)
 
         df = self.RSI2(df)
-        # logger.info(df)
-        # logger.info(df.iloc[298])
         return df.iloc[limit_num - 1], df.iloc[limit_num - 2]
 
     def okex_can(self):
@@ -327,7 +317,7 @@ class okex_rsi:
 
                 ## 当前的rsi对应的价格 和开盘价格小于千n  就跳过这个价格
                 diff_p = abs(float(rsi_price) - float(open_price)) / float(open_price)
-                if diff_p < 0.0015:
+                if diff_p < 0.0019 or diff_p > 0.08:
                     logger.info(
                         f"当前价格和开盘价格相差太小-跳过{coin} {rsi_} diff_p{diff_p}  open_price {open_price}  rsi_price {rsi_price}")
                     continue
@@ -371,6 +361,7 @@ class okex_rsi:
             algoId = alg['algoId']
             tag = alg['tag']
 
+            ## 非api订单不取消
             if 'rrr1aa' not in tag:
                 # break
                 continue
@@ -394,6 +385,7 @@ class okex_rsi:
             liqPx = pos['liqPx']
             mgnMode = pos['mgnMode']
 
+            ## 全仓 没有止损价格
             if mgnMode == 'cross' or liqPx == '':
                 logger.info(f" {instId}  {mgnMode} {liqPx} 跳过 不添加止损")
                 continue
