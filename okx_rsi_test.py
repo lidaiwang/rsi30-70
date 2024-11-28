@@ -232,12 +232,11 @@ class okex_rsi:
         flag = "0"  # live trading: 0, demo trading: 1
         tradeAPI = Account.AccountAPI(api_key, secret_key, passphrase, False, flag, debug=False, domain=self.okex_path)
         if coin in ['eth', 'btc']:
-            lever = 7
-            instId = (coin + '-USD-SWAP').upper()
+            lever = 10
         else:
             lever = 5
-            instId = (coin + '-USDT-SWAP').upper()
 
+        instId = (coin + '-USDT-SWAP').upper()
         re = tradeAPI.set_leverage(instId=instId, lever=lever, mgnMode='isolated', posSide='long')
         logger.info(f"  杠杆设置 ： {re}")
         time.sleep(0.2)
@@ -311,7 +310,7 @@ class okex_rsi:
 
                 ## 当前的rsi对应的价格 和开盘价格小于千n  就跳过这个价格
                 diff_p = abs(float(rsi_price) - float(open_price)) / float(open_price)
-                if diff_p < 0.0019 or diff_p > 0.1:
+                if diff_p < 0.0019 or diff_p > 0.15:
                     logger.info(
                         f"价格相差太小-跳过{coin}{rsi_} open_price:{open_price} rsi_price:{rsi_price} diff_p{diff_p}  ")
                     continue
