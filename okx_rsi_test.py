@@ -129,7 +129,7 @@ class okex_rsi:
         # client = MarketData.MarketAPI(debug=True)
         instId = (coin + '-USDT-SWAP').upper()
         # re = client.get_candlesticks(instId=instId, bar=bar, limit=300)
-        limit_num = 44
+        limit_num = 30
         url = f'{self.okex_path}/api/v5/market/candles?instId={instId}&bar=5m&limit={limit_num}'
         s = requests.session()
         s.keep_alive = False
@@ -160,9 +160,9 @@ class okex_rsi:
         passphrase = self.passphrase
 
         flag = "0"  # live trading: 0, demo trading: 1
-        tradeAPI = Trade.TradeAPI(api_key, secret_key, passphrase, False, flag, debug=True, domain=self.okex_path)
+        tradeAPI = Trade.TradeAPI(api_key, secret_key, passphrase, False, flag, debug=False, domain=self.okex_path)
         ret = tradeAPI.get_order_list()
-        logger.info(ret)
+        logger.info(f"挂单列表{ret}")
         dic = []
         for ord in ret['data']:
             cid = ord['clOrdId']
@@ -317,11 +317,10 @@ class okex_rsi:
 
                 ## 当前的rsi对应的价格 和开盘价格小于千n  就跳过这个价格
                 diff_p = abs(float(rsi_price) - float(open_price)) / float(open_price)
-                if diff_p < 0.0019 or diff_p > 0.08:
+                if diff_p < 0.0019 or diff_p > 0.1:
                     logger.info(
-                        f"当前价格和开盘价格相差太小-跳过{coin} {rsi_} diff_p{diff_p}  open_price {open_price}  rsi_price {rsi_price}")
+                        f"价格相差太小-跳过{coin}{rsi_} open_price:{open_price} rsi_price:{rsi_price} diff_p{diff_p}  ")
                     continue
-
                 ## 买单
                 if rsi_ <= 30:
                     ## 如果上次的rsi 小于 当前的rsi就跳过
