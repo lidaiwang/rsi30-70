@@ -194,11 +194,10 @@ class okex_rsi:
         tradeAPI = Trade.TradeAPI(api_key, secret_key, passphrase, False, flag, debug=False, domain=self.okex_path)
 
         ### 分段 集中下单
-        if len(dic) >= 20 or (coin == '' and len(dic) >= 1) or (coin == 'btc' and rsi_ == 97):
+        if len(dic) >= 20 or (coin == '' and len(dic) >= 1):
             logger.info(f'下单参数 {coin}   {dic}')
             logger.info(f'     下单     ')
             re = tradeAPI.place_multiple_orders(dic)
-            # logger.info(f"参数 {dic}")
             logger.info(f'下单返回 {coin}   {re}')
             time.sleep(0.3)
             del dic[:]
@@ -206,12 +205,7 @@ class okex_rsi:
         if coin == '':
             return
 
-        if coin in ['eth1', 'btc1']:
-            instId = (coin + '-USD-SWAP').upper()
-        else:
-            instId = (coin + '-USDT-SWAP').upper()
-        if coin in ['btc1', 'doge1']:
-            num = 1
+        instId = (coin + '-USDT-SWAP').upper()
 
         posSide = 'long'
         tdMode = 'isolated'
@@ -426,6 +420,7 @@ class okex_rsi:
                 except Exception as e:
                     pass
 
+## nohup  python3 okx_rsi_test.py  whil  >> okx_rsi_test.log   2>&1 &
 
 len_ = len(sys.argv)
 if len_ >= 2:
