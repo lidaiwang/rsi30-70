@@ -119,7 +119,7 @@ class okex_rsi:
                 df.loc[index, 'RSI'] = rsi
 
                 for rr1 in rsi_list:
-                    rsi_ = float(rr1)
+                    rsi_ = int(rr1)
                     rsi30 = self.rsi_to(rsi_, rsi_s, s_1, s_2, close_1)
                     df.loc[index, 'RSI_' + str(rr1)] = rsi30
 
@@ -310,19 +310,17 @@ class okex_rsi:
 
             c_price = init_num['price']
             c_num = init_num['num']
-
+            nn = 1
             for rsi_, num1 in rsi_list.items():
                 rsi_ = int(rsi_)
-                a = Decimal(str(num1))
+                if rsi_ <= 30:
+                    a = Decimal(str(num1 - nn))
+                else:
+                    a = Decimal(str(num1))
                 b = Decimal(str(c_num))
                 num = str(a * b)
-
-                if rsi_ <= 30:
-                    a = Decimal(str(num1 - 1))
-                    b = Decimal(str(c_num))
-                    num = str(a * b)
-                    if float(num) <= 0 :
-                        continue
+                if float(num) <= 0 :
+                    continue
 
                 rsi_price = re1['RSI_' + str(rsi_)]
 
@@ -441,6 +439,7 @@ class okex_rsi:
                 except Exception as e:
                     logger.error(f"loop 异常 {e}")
 
+## nohup  python3 bnb_rsi_test.py  whil  >> bnb_rsi_test.log   2>&1 &
 
 len_ = len(sys.argv)
 if len_ >= 2:
