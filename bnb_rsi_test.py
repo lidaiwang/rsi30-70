@@ -12,7 +12,7 @@ import random
 import sys
 import requests
 from decimal import Decimal, getcontext
-
+import json
 from binance.um_futures import UMFutures
 
 
@@ -119,7 +119,7 @@ class okex_rsi:
                 df.loc[index, 'RSI'] = rsi
 
                 for rr1 in rsi_list:
-                    rsi_ = rr1
+                    rsi_ = float(rr1)
                     rsi30 = self.rsi_to(rsi_, rsi_s, s_1, s_2, close_1)
                     df.loc[index, 'RSI_' + str(rr1)] = rsi30
 
@@ -129,27 +129,16 @@ class okex_rsi:
 
     ##业务综合
     def get_k_line(self, coin='link', bar='5m'):
-        # client = MarketData.MarketAPI(debug=True)
-        if coin in ['eth1', 'btc1']:
-            instId = (coin + '-USD-SWAP').upper()
-        else:
-            instId = (coin + '-USDT-SWAP').upper()
-
-            instId = (coin + 'USDT').upper()
-        # re = client.get_candlesticks(instId=instId, bar=bar, limit=300)
-        ## https://fapi.binance.com/fapi/v1/klines?symbol=BNBUSDT&interval=5m&limit=300
-        limit1 = 80
+        instId = (coin + 'USDT').upper()
+        limit1 = 30
         url = f'{self.okex_path}/fapi/v1/klines?symbol={instId}&interval=5m&limit={limit1}'
-        # logger.info(f" {coin} {bar}  {url}")
-        # re1 = requests.get(url)
-        # re = re1.json()
 
         s = requests.session()
         s.keep_alive = False
         re1 = s.get(url)
         re = re1.json()
 
-        time.sleep(1)
+        time.sleep(0.5)
 
         data1 = re
         data1 = self.k_line_date(data1)
@@ -159,10 +148,6 @@ class okex_rsi:
             logger.info(f" {coin} {bar}  {len1}  {instId} 不够数量  {re}")
             return [], []
 
-        # logger.info(data1)
-
-        ## [1727668200000, '578.630', '578.690', '578.050', 578.11, '884.85', 1727668499999, '511784.02860', 1044, '320.19', '185217.20750', '0', '2024-09-30 11:50:00'
-
         df = DataFrame(data=data1,
                        columns=['time', 'open', 'high', 'low', 'close', 'a', 'b', 'c', 'confirm', 'd_t2', 'dd', 'tt',
                                 'd_t'])
@@ -170,17 +155,13 @@ class okex_rsi:
         df = df.sort_values('time', ascending=True)
 
         df = df.set_index('d_t')
-        # logger.info(df)
-
         df = self.RSI2(df)
-        # logger.info(df)
-        # logger.info(df.iloc[298])
+
         return df.iloc[limit1-1], df.iloc[limit1-2]
 
     def okex_can(self):
         api_key = self.api_key
         secret_key = self.secret_key
-        passphrase = self.passphrase
 
         tradeAPI = UMFutures(api_key, secret_key)
         ret = tradeAPI.get_orders()
@@ -193,8 +174,12 @@ class okex_rsi:
             cid = ord['orderId']
             symbol = ord['symbol']
             timeInForce = ord['timeInForce']
-
+            clientOrderId = ord['clientOrderId']
+            ## 挂单
             if timeInForce != 'GTX':
+                continue
+            ## rrr1aa
+            if 'rrr1aa' not in clientOrderId:
                 continue
 
             re55 = tradeAPI.cancel_order(symbol, cid)
@@ -203,9 +188,6 @@ class okex_rsi:
     def okex_trade_par(self, dic=[], coin='bnb', side='buy', price='-0.001', num=1, rsi_=10, c_price=0):
         api_key = self.api_key
         secret_key = self.secret_key
-        passphrase = self.passphrase
-        flag = "0"  # live trading: 0, demo trading: 1
-        # tradeAPI = Trade.TradeAPI(api_key, secret_key, passphrase, False, flag, debug=False, domain=self.okex_path)
         tradeAPI = UMFutures(api_key, secret_key)
 
         ### 分段 集中下单
@@ -221,10 +203,7 @@ class okex_rsi:
         if coin == '':
             return
 
-        if coin in ['eth1', 'btc1']:
-            instId = (coin + '-USD-SWAP').upper()
-        else:
-            instId = (coin + 'USDT').upper()
+        instId = (coin + 'USDT').upper()
         # num = 0.01
 
         posSide = 'long'
@@ -280,7 +259,6 @@ class okex_rsi:
 
     okex_path = ' https://fapi.binance.com'
 
-
     api_key = None
     secret_key = None
     passphrase = None
@@ -288,9 +266,20 @@ class okex_rsi:
     rsi_list = None
 
     def __init__(self):
-        pass
+        ## defi
+        config_fil = './config.json'
+        with open(config_fil, 'r') as f:
+            data = json.load(f)
+            config = data['binance']
 
+            logger.info(config)
 
+            self.api_key = config['api_key']
+            self.secret_key = config['secret_key']
+            self.passphrase = config['passphrase']
+
+            self.coin_list = config['coin_list']
+            self.rsi_list = config['rsi_list']
 
     ff = True
 
@@ -323,6 +312,7 @@ class okex_rsi:
             c_num = init_num['num']
 
             for rsi_, num1 in rsi_list.items():
+                rsi_ = int(rsi_)
                 a = Decimal(str(num1))
                 b = Decimal(str(c_num))
                 num = str(a * b)
@@ -338,7 +328,7 @@ class okex_rsi:
 
                 ## 当前的rsi对应的价格 和开盘价格小于千n  就跳过这个价格
                 diff_p = abs(float(rsi_price) - float(open_price)) / float(open_price)
-                if diff_p < 0.0015:
+                if diff_p < 0.0015 or diff_p > 0.15:
                     logger.info(
                         f"当前价格和开盘价格相差太小-跳过{coin} {rsi_} diff_p{diff_p}  open_price {open_price}  rsi_price {rsi_price}")
                     continue
