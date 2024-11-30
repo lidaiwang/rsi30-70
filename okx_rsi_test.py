@@ -255,14 +255,14 @@ class okex_rsi:
             data = json.load(f)
             config = data['okx']
 
-            logger.info(config)
-
             self.api_key = config['api_key']
             self.secret_key = config['secret_key']
             self.passphrase = config['passphrase']
 
             self.coin_list = config['coin_list']
-            self.rsi_list = config['rsi_list']
+            self.rsi_list = data['rsi_list']
+
+            self.nn = data['nn']
 
     ff = True
 
@@ -278,7 +278,7 @@ class okex_rsi:
         self.okex_can()
 
         dic = []
-        nn = 1
+        nn = self.nn
         for coin, init_num in coin_list.items():
             ##每次启动的时候  设置仓位杠杆
             if self.ff:

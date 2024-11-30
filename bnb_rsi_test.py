@@ -264,6 +264,7 @@ class okex_rsi:
     passphrase = None
     coin_list = None
     rsi_list = None
+    nn = None
 
     def __init__(self):
         ## defi
@@ -272,14 +273,15 @@ class okex_rsi:
             data = json.load(f)
             config = data['binance']
 
-            logger.info(config)
-
             self.api_key = config['api_key']
             self.secret_key = config['secret_key']
             self.passphrase = config['passphrase']
 
             self.coin_list = config['coin_list']
-            self.rsi_list = config['rsi_list']
+
+            self.rsi_list = data['rsi_list']
+            self.nn = data['nn']
+
 
     ff = True
 
@@ -294,6 +296,7 @@ class okex_rsi:
         self.okex_can()
 
         dic = []
+        nn = self.nn
         for coin, init_num in self.coin_list.items():
             ##每次启动的时候  设置仓位杠杆
             if self.ff:
@@ -310,7 +313,6 @@ class okex_rsi:
 
             c_price = init_num['price']
             c_num = init_num['num']
-            nn = 1
             for rsi_, num1 in rsi_list.items():
                 rsi_ = int(rsi_)
                 if rsi_ <= 30:
