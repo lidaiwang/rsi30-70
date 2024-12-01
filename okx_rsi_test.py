@@ -447,32 +447,32 @@ class okex_rsi:
             re11 = Funding111.funds_transfer(ccy='USDT', amt=tr_amt, from_='6', to='18')
             logger.info(f"划入USDT:{tr_amt} {re11}")
 
-def whil(self):
-    time2 = time.time()
+    def whil(self):
+        time2 = time.time()
 
-    while True:
-        time1 = int(time.time())
-        yu_time = time1 % 300
-        ##logger.info(yu_time)
+        while True:
+            time1 = int(time.time())
+            yu_time = time1 % 300
+            ##logger.info(yu_time)
 
-        time.sleep(1)
+            time.sleep(1)
 
-        if yu_time in [10, 3, 4, 5, 6, 7]:
-            try:
-                self.loop()
-                time.sleep(5)
-                continue
-            except Exception as e:
-                pass
+            if yu_time in [10, 3, 4, 5, 6, 7]:
+                try:
+                    self.loop()
+                    time.sleep(5)
+                    continue
+                except Exception as e:
+                    pass
 
-        # 18分钟
-        if time1 - time2 > 18 * 60:
-            time2 = time1
-            try:
-                self.zhisun()
-                self.acc()
-            except Exception as e:
-                pass
+            # 18分钟
+            if time1 - time2 > 18 * 60:
+                time2 = time1
+                try:
+                    self.zhisun()
+                    self.acc()
+                except Exception as e:
+                    pass
 
 
 ## nohup  python3 okx_rsi_test.py  whil  >> okx_rsi_test.log   2>&1 &
