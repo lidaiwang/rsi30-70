@@ -193,6 +193,8 @@ class okex_rsi:
         flag = "0"  # live trading: 0, demo trading: 1
         tradeAPI = Trade.TradeAPI(api_key, secret_key, passphrase, False, flag, debug=False, domain=self.okex_path)
 
+        logger.error(len(dic))
+
         ### 分段 集中下单
         if len(dic) >= 20 or (coin == '' and len(dic) >= 1):
             logger.info(f'下单参数 {coin}   {dic}')
@@ -315,20 +317,19 @@ class okex_rsi:
                         f"价格相差太小-跳过{coin}{rsi_} open_price:{open_price} rsi_price:{rsi_price} diff_p{diff_p}  ")
                     continue
                 ## 买单
+                side = ''
                 if rsi_ <= 30:
                     ## 如果上次的rsi 小于 当前的rsi就跳过
                     if rsi_ > last_RSI:
                         logger.info(f" 当次的rsi 要比上次低 跳过 {coin}  {rsi_}  {last_RSI} ")
                     ## 买单
-                    self.okex_trade_par(dic, coin, 'buy', rsi_price, num, rsi_)
-                    logger.error(len(dic))
+                    side = 'buy'
                 if rsi_ >= 70:
                     ##卖单
-                    self.okex_trade_par(dic, coin, 'sell', rsi_price, num, rsi_)
-                    logger.error(len(dic))
+                    side = 'sell'
+                self.okex_trade_par(dic, coin, side, rsi_price, num, rsi_)
 
         self.okex_trade_par(dic, '')
-        logger.error(len(dic))
 
         self.ff = False
 

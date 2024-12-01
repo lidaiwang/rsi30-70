@@ -190,6 +190,8 @@ class okex_rsi:
         secret_key = self.secret_key
         tradeAPI = UMFutures(api_key, secret_key)
 
+        logger.error(len(dic))
+
         ### 分段 集中下单
         if len(dic) >= 5 or (coin == '' and len(dic) >= 1) or (coin == 'btc' and rsi_ == 97):
             logger.info(f'批量 下单参数 {coin}   {dic}')
@@ -339,15 +341,15 @@ class okex_rsi:
                     if rsi_ > last_RSI:
                         logger.info(f" 当次的rsi 要比上次低 跳过 {coin}  {rsi_}  {last_RSI} ")
                     ## 买单
-                    self.okex_trade_par(dic, coin, 'buy', rsi_price, num, rsi_, c_price)
-                    logger.error(len(dic))
+                    side = 'buy'
                 if rsi_ >= 70:
                     ##卖单
-                    self.okex_trade_par(dic, coin, 'sell', rsi_price, num, rsi_, c_price)
-                    logger.error(len(dic))
+                    side ='sell'
+
+                self.okex_trade_par(dic, coin, side, rsi_price, num, rsi_, c_price)
+
 
         self.okex_trade_par(dic, '')
-        logger.error(len(dic))
 
         self.ff = False
 
