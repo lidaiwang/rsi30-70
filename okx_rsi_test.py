@@ -1,6 +1,8 @@
 import okx.Trade as Trade
 import okx.MarketData as MarketData
 import okx.Account as Account
+import okx.Earning as Earning
+import okx.Funding as Funding
 from loguru import logger
 import pandas as pd
 from pandas import DataFrame
@@ -394,31 +396,84 @@ class okex_rsi:
             logger.info(f"止损 下单 {instId}  {liqPx}  {re1}")
             time.sleep(0.2)
 
-    def whil(self):
-        time2 = time.time()
+    def acc(self):
+        ##资金划转
+        api_key = self.api_key
+        secret_key = self.secret_key
+        passphrase = self.passphrase
 
-        while True:
-            time1 = int(time.time())
-            yu_time = time1 % 300
-            ##logger.info(yu_time)
+        flag = "0"  # live trading: 0, demo trading: 1
+        Account11 = Account.AccountAPI(api_key, secret_key, passphrase, False, flag, debug=False, domain=self.okex_path)
+        re1 = Account11.get_account_balance(ccy='USDT')
 
-            time.sleep(1)
+        # logger.info(re1)
+        if re1['code'] != '0':
+            logger.info("资金获取失败")
+            return
+        availBal = float(re1['data'][0]['details'][0]['availBal'])
+        logger.info(f"可用资金USDT {availBal}")
 
-            if yu_time in [10, 3, 4, 5, 6, 7]:
-                try:
-                    self.loop()
-                    time.sleep(5)
-                    continue
-                except Exception as e:
-                    pass
+        Earning11 = Earning.EarningAPI(api_key, secret_key, passphrase, False, flag, debug=False, domain=self.okex_path)
+        re2 = Earning11.get_saving_balance(ccy='USDT')
+        if re2['code'] != '0':
+            logger.info("获取奖励失败")
+            return
+        amt = float(re2['data'][0]['amt'])
+        logger.info(f"奖励金额USDT {amt}")
 
-            # 18分钟
-            if time1 - time2 > 18 * 60:
-                time2 = time1
-                try:
-                    self.zhisun()
-                except Exception as e:
-                    pass
+        ## 大于500 划出200  小于200 划入200
+        if availBal > 500:
+            ##划出
+            Funding111 = Funding.FundingAPI(api_key, secret_key, passphrase, False, flag, debug=False,
+                                            domain=self.okex_path)
+
+            re11 = Funding111.funds_transfer(ccy='USDT', amt=201, from_='18', to='6')
+            logger.info(f"划出USDT:200 {re11}")
+
+            re122 = Earning11.savings_purchase_redemption(ccy='USDT', amt=200, side='purchase', rate='0.05')
+            logger.info(f"购买USDT:200 {re122}")
+
+        if availBal < 200:
+            tr_amt = 200
+            if amt < 200:
+                tr_amt = int(amt)
+
+            Funding111 = Funding.FundingAPI(api_key, secret_key, passphrase, False, flag, debug=False,
+                                            domain=self.okex_path)
+
+            re122 = Earning11.savings_purchase_redemption(ccy='USDT', amt=tr_amt, side='redempt')
+            logger.info(f"赎回USDT:{tr_amt} {re122}")
+
+            re11 = Funding111.funds_transfer(ccy='USDT', amt=tr_amt, from_='6', to='18')
+            logger.info(f"划入USDT:{tr_amt} {re11}")
+
+def whil(self):
+    time2 = time.time()
+
+    while True:
+        time1 = int(time.time())
+        yu_time = time1 % 300
+        ##logger.info(yu_time)
+
+        time.sleep(1)
+
+        if yu_time in [10, 3, 4, 5, 6, 7]:
+            try:
+                self.loop()
+                time.sleep(5)
+                continue
+            except Exception as e:
+                pass
+
+        # 18分钟
+        if time1 - time2 > 18 * 60:
+            time2 = time1
+            try:
+                self.zhisun()
+                self.acc()
+            except Exception as e:
+                pass
+
 
 ## nohup  python3 okx_rsi_test.py  whil  >> okx_rsi_test.log   2>&1 &
 
