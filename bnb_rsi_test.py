@@ -16,8 +16,6 @@ import json
 from binance.um_futures import UMFutures
 
 
-
-
 class okex_rsi:
     ## K线时间
     def k_line_date(self, data1=[]):
@@ -157,7 +155,7 @@ class okex_rsi:
         df = df.set_index('d_t')
         df = self.RSI2(df)
 
-        return df.iloc[limit1-1], df.iloc[limit1-2]
+        return df.iloc[limit1 - 1], df.iloc[limit1 - 2]
 
     def okex_can(self):
         api_key = self.api_key
@@ -284,7 +282,6 @@ class okex_rsi:
             self.rsi_list = data['rsi_list']
             self.nn = data['nn']
 
-
     ff = True
 
     def loop(self):
@@ -319,7 +316,8 @@ class okex_rsi:
             amt_p = init_num['amt_p'] if 'amt_p' in init_num else 0
             for rsi_, num1 in rsi_list.items():
                 if c_value > 0:
-                    num1 = round(c_value / open_price, amt_p)
+                    c_num = round(c_value / float(open_price), amt_p)
+                    # logger.info(f"{c_value} {open_price} {amt_p} {c_num}")
 
                 rsi_ = int(rsi_)
                 if rsi_ <= 30:
@@ -328,7 +326,8 @@ class okex_rsi:
                     a = Decimal(str(num1))
                 b = Decimal(str(c_num))
                 num = str(a * b)
-                if float(num) <= 0 :
+                if float(num) <= 0:
+                    logger.info(f" {coin} {rsi_} {num1} {a} {b} {num}数量为0 跳过{open_price}")
                     continue
 
                 rsi_price = re1['RSI_' + str(rsi_)]
@@ -349,10 +348,9 @@ class okex_rsi:
                     side = 'buy'
                 if rsi_ >= 70:
                     ##卖单
-                    side ='sell'
+                    side = 'sell'
 
                 self.okex_trade_par(dic, coin, side, rsi_price, num, rsi_, c_price)
-
 
         self.okex_trade_par(dic, '')
 
@@ -444,6 +442,7 @@ class okex_rsi:
                     pass
                 except Exception as e:
                     logger.error(f"loop 异常 {e}")
+
 
 ## nohup  python3 bnb_rsi_test.py  whil  >> bnb_rsi_test.log   2>&1 &
 
