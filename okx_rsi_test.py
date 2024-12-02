@@ -416,22 +416,23 @@ class okex_rsi:
         Earning11 = Earning.EarningAPI(api_key, secret_key, passphrase, False, flag, debug=False, domain=self.okex_path)
         re2 = Earning11.get_saving_balance(ccy='USDT')
         if re2['code'] != '0':
-            logger.info("获取奖励失败")
+            logger.info("获取赚币失败")
             return
         amt = float(re2['data'][0]['amt'])
-        logger.info(f"奖励金额USDT {amt}")
+        logger.info(f"赚币金额USDT {amt}")
 
         ## 大于500 划出200  小于200 划入200
         if availBal > 500:
+            tr_amt = int(availBal - 300)
             ##划出
             Funding111 = Funding.FundingAPI(api_key, secret_key, passphrase, False, flag, debug=False,
                                             domain=self.okex_path)
 
-            re11 = Funding111.funds_transfer(ccy='USDT', amt=201, from_='18', to='6')
-            logger.info(f"划出USDT:200 {re11}")
+            re11 = Funding111.funds_transfer(ccy='USDT', amt=tr_amt, from_='18', to='6')
+            logger.info(f"划出USDT:{tr_amt} {re11}")
 
-            re122 = Earning11.savings_purchase_redemption(ccy='USDT', amt=200, side='purchase', rate='0.05')
-            logger.info(f"购买USDT:200 {re122}")
+            re122 = Earning11.savings_purchase_redemption(ccy='USDT', amt=tr_amt, side='purchase', rate='0.05')
+            logger.info(f"申购USDT:{tr_amt} {re122}")
 
         if availBal < 200:
             tr_amt = 200
