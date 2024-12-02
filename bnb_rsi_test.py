@@ -315,7 +315,12 @@ class okex_rsi:
 
             c_price = init_num['price']
             c_num = init_num['num']
+            c_value = init_num['value'] if 'value' in init_num else 0
+            amt_p = init_num['amt_p'] if 'amt_p' in init_num else 0
             for rsi_, num1 in rsi_list.items():
+                if c_value > 0:
+                    num1 = round(c_value / open_price, amt_p)
+
                 rsi_ = int(rsi_)
                 if rsi_ <= 30:
                     a = Decimal(str(num1 - nn))
@@ -421,9 +426,6 @@ class okex_rsi:
             ##logger.info(yu_time)
 
             time.sleep(1)
-
-
-
             if yu_time in [10, 3, 4, 5, 6, 7]:
                 try:
                     self.loop()
