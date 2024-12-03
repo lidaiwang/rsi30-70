@@ -297,6 +297,10 @@ class okex_rsi:
             last_RSI = re2['RSI']
             open_price = re1['open']
 
+            if coin in self.pos_info and self.pos_info[coin] < init_num * 25:
+                nn = 0
+                logger.info(f" {coin} {self.pos_info[coin]} {init_num}仓位数量太少-尽量买入")
+
             for rsi_, num1 in rsi_list.items():
                 rsi_ = int(rsi_)
                 if rsi_ <= 30:
@@ -334,6 +338,8 @@ class okex_rsi:
         self.okex_trade_par(dic, '')
 
         self.ff = False
+
+    pos_info = {}
 
     def zhisun(self):
         api_key = self.api_key
@@ -384,6 +390,11 @@ class okex_rsi:
             if mgnMode == 'cross' or liqPx == '':
                 logger.info(f" {instId}  {mgnMode} {liqPx} 跳过 不添加止损")
                 continue
+
+            if mgnMode == 'isolated' and '-USDT-' in instId:
+                pos_size = pos['size']
+                sy = (instId.split('-')[0]).lower()
+                self.pos_info[sy] = float(pos_size)
 
             cid1 = ''.join(random.choices(string.ascii_lowercase, k=9))
             tag = 'rrr1aa' + cid1
