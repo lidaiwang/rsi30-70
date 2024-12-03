@@ -138,7 +138,7 @@ class okex_rsi:
         re1 = s.get(url)
         re = re1.json()
 
-        time.sleep(1)
+        time.sleep(0.4)
 
         data1 = re['data']
         data1 = self.k_line_date(data1)
@@ -239,11 +239,13 @@ class okex_rsi:
             lever = 10
         else:
             lever = 5
-
-        instId = (coin + '-USDT-SWAP').upper()
-        re = tradeAPI.set_leverage(instId=instId, lever=lever, mgnMode='isolated', posSide='long')
-        logger.info(f"  杠杆设置 ： {re}")
-        time.sleep(0.2)
+        try:
+            instId = (coin + '-USDT-SWAP').upper()
+            re = tradeAPI.set_leverage(instId=instId, lever=lever, mgnMode='isolated', posSide='long')
+            logger.info(f"  杠杆设置 ： {re}")
+            time.sleep(0.2)
+        except Exception as e:
+            logger.error(e)
 
     okex_path = 'https://www.okx.com'
     api_key = None
@@ -297,12 +299,14 @@ class okex_rsi:
             open_price = re1['open']
 
             nn = self.nn
-            if coin not in self.pos_info or self.pos_info[coin] < init_num * 25:
+            pos_num = self.pos_info[coin] if coin in self.pos_info else 0
+            if pos_num < init_num * 25:
                 nn = 0
-                logger.info(f" {coin} {self.pos_info[coin]} {init_num}仓位数量太少-尽量买入")
+                logger.info(f" {coin} {pos_num} {init_num}仓位数量太少-尽量买入")
 
             logger.info(f" {coin} {init_num} {nn} {last_RSI} {open_price} dict: {self.pos_info}")
 
+            # continue
             for rsi_, num1 in rsi_list.items():
                 rsi_ = int(rsi_)
                 if rsi_ <= 30 and nn > 0 :
