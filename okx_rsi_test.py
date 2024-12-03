@@ -297,10 +297,9 @@ class okex_rsi:
             open_price = re1['open']
 
             nn = self.nn
-            if coin in self.pos_info and self.pos_info[coin] < init_num * 25:
+            if coin not in self.pos_info or self.pos_info[coin] < init_num * 25:
                 nn = 0
                 logger.info(f" {coin} {self.pos_info[coin]} {init_num}仓位数量太少-尽量买入")
-
 
             logger.info(f" {coin} {init_num} {nn} {last_RSI} {open_price} dict: {self.pos_info}")
 
