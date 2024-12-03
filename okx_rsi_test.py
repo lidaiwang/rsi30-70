@@ -388,6 +388,9 @@ class okex_rsi:
             instId = pos['instId']
             liqPx = pos['liqPx']
             mgnMode = pos['mgnMode']
+            pos_size = pos['pos']
+
+            # self.pos_info[instId] = pos_size
 
             ## 全仓 没有止损价格
             if mgnMode == 'cross' or liqPx == '':
@@ -395,7 +398,6 @@ class okex_rsi:
                 continue
 
             if mgnMode == 'isolated' and '-USDT-' in instId:
-                pos_size = pos['size']
                 sy = (instId.split('-')[0]).lower()
                 self.pos_info[sy] = float(pos_size)
 
@@ -409,6 +411,8 @@ class okex_rsi:
                                              )
             logger.info(f"止损 下单 {instId}  {liqPx}  {re1}")
             time.sleep(0.2)
+
+        logger.info(self.pos_info)
 
     def acc(self):
         ##资金划转
@@ -478,6 +482,7 @@ class okex_rsi:
                     time.sleep(5)
                     continue
                 except Exception as e:
+                    logger.error(e)
                     pass
 
             # 18分钟
@@ -487,6 +492,7 @@ class okex_rsi:
                     self.zhisun()
                     self.acc()
                 except Exception as e:
+                    logger.error(e)
                     pass
 
 
