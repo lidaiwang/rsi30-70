@@ -282,7 +282,6 @@ class okex_rsi:
         self.okex_can()
 
         dic = []
-        nn = self.nn
         for coin, init_num in coin_list.items():
             ##每次启动的时候  设置仓位杠杆
             if self.ff:
@@ -297,6 +296,7 @@ class okex_rsi:
             last_RSI = re2['RSI']
             open_price = re1['open']
 
+            nn = self.nn
             if coin in self.pos_info and self.pos_info[coin] < init_num * 25:
                 nn = 0
                 logger.info(f" {coin} {self.pos_info[coin]} {init_num}仓位数量太少-尽量买入")
