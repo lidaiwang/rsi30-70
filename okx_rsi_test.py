@@ -301,7 +301,8 @@ class okex_rsi:
                 nn = 0
                 logger.info(f" {coin} {self.pos_info[coin]} {init_num}仓位数量太少-尽量买入")
 
-            logger.info(f" {coin} {init_num} {nn} {last_RSI} {open_price}")
+
+            logger.info(f" {coin} {init_num} {nn} {last_RSI} {open_price} dict: {self.pos_info}")
 
             for rsi_, num1 in rsi_list.items():
                 rsi_ = int(rsi_)
