@@ -463,7 +463,7 @@ class okex_rsi:
             logger.info(f"划入USDT:{tr_amt} {re11}")
 
     def whil(self):
-        time2 = time.time()
+        time2 = 0
 
         while True:
             time1 = int(time.time())
