@@ -336,7 +336,7 @@ class okex_rsi:
             if pos_num < c_num * 25:
                 nn = 0
                 logger.info(f" {coin} {pos_num} {init_num}仓位数量太少-尽量买入")
-            logger.info(f" {coin} nn:{nn} {c_num}  {last_RSI} {open_price} dict: {self.pos_info}")
+            logger.info(f" {coin} nn:{nn} 单次下单：{c_num} 持仓：{pos_num} dict: {self.pos_info}")
 
 
             for rsi_, num1 in rsi_list.items():

@@ -304,7 +304,8 @@ class okex_rsi:
                 nn = 0
                 logger.info(f" {coin} {pos_num} {init_num}仓位数量太少-尽量买入")
 
-            logger.info(f" {coin} {init_num} {nn} {last_RSI} {open_price} dict: {self.pos_info}")
+            # logger.info(f" {coin} {init_num} {nn} {last_RSI} {open_price} dict: {self.pos_info}")
+            logger.info(f" {coin} nn:{nn} 单次下单：{init_num} 持仓：{pos_num} dict: {self.pos_info}")
 
             # continue
             for rsi_, num1 in rsi_list.items():
