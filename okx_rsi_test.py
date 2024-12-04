@@ -27,6 +27,7 @@ class okex_rsi:
             d_t = time.strftime("%Y-%m-%d %H:%M:%S", timeArray)
 
             it[4] = float(it[4])
+            it[1] = float(it[1])
             it.append(d_t)
 
             ##要删掉最后一个没有结束的
@@ -153,7 +154,12 @@ class okex_rsi:
         df = df.sort_values('time', ascending=True)
         df = df.set_index('d_t')
 
+        if coin in ['sats']:
+            df['close'] = df['close'] * 1000000
+            df['open'] = df['open'] * 1000000
+
         df = self.RSI2(df)
+
         return df.iloc[limit_num - 1], df.iloc[limit_num - 2]
 
     def okex_can(self):
@@ -292,6 +298,8 @@ class okex_rsi:
             ##返回最后两个单元  re1是最后一个单元  re2是倒数第二个单元
             ## re1是没有完成的单元  结束时间是大于当前时间
             re1, re2 = self.get_k_line(coin, '5m')
+            # logger.info(f" {coin} {re1} {re2}")
+            # break
 
             if type(re1) == type([]):
                 continue
@@ -300,7 +308,7 @@ class okex_rsi:
 
             nn = self.nn
             pos_num = self.pos_info[coin] if coin in self.pos_info else 0
-            if pos_num < init_num * 25:
+            if pos_num < init_num * 50:
                 nn = 0
                 logger.info(f" {coin} {pos_num} {init_num}仓位数量太少-尽量买入")
 
@@ -322,7 +330,6 @@ class okex_rsi:
                     continue
 
                 rsi_price = re1['RSI_' + str(rsi_)]
-
                 ## 当前的rsi对应的价格 和开盘价格小于千n  就跳过这个价格
                 diff_p = abs(float(rsi_price) - float(open_price)) / float(open_price)
                 if diff_p < 0.0019 or diff_p > 0.15:
@@ -340,7 +347,13 @@ class okex_rsi:
                 if rsi_ >= 70:
                     ##卖单
                     side = 'sell'
+
+                if coin in ['sats']:
+                    bb1 = float(rsi_price) / 1000000
+                    rsi_price = f"{bb1:.15f}"
+
                 self.okex_trade_par(dic, coin, side, rsi_price, num, rsi_)
+            # break
 
         self.okex_trade_par(dic, '')
 
