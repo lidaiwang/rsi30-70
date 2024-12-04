@@ -174,6 +174,8 @@ class okex_rsi:
                 continue
             symbol = pos1['symbol']
             positionAmt = float(pos1['positionAmt'])
+            if positionAmt == 0:
+                continue
             sy = symbol.replace('USDT', '').lower()
             self.pos_info[sy] = abs(positionAmt)
 
