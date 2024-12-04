@@ -169,30 +169,42 @@ class okex_rsi:
 
         flag = "0"  # live trading: 0, demo trading: 1
         tradeAPI = Trade.TradeAPI(api_key, secret_key, passphrase, False, flag, debug=False, domain=self.okex_path)
-        ret = tradeAPI.get_order_list()
-        logger.info(f"挂单列表{ret}")
-        dic = []
-        for ord in ret['data']:
-            cid = ord['clOrdId']
-            if 'rrr1aa' in cid:
-                dic.append(
-                    {
-                        "instId": ord['instId'],
-                        "ordId": ord['ordId']
-                    },
-                )
-                if len(dic) >= 20:
-                    re1 = tradeAPI.cancel_multiple_orders(dic)
-                    logger.info(f" 撤单：  {re1}")
-                    time.sleep(0.3)
-                    dic = []
 
-            # re1 = tradeAPI.cancel_order(ord['instId'], ordId=ord['ordId'])
-            # logger.info(f" 撤单：  {re1}")
+        dic = []
+        after = ''
+        order_num = 0
+        while True:
+            limit = 100
+            ret = tradeAPI.get_order_list(ordType='post_only', limit=limit, after=after)
+            order_len = len(ret['data'])
+            order_num += order_len
+            logger.info(f"挂单数量：{order_len}")
+
+            for ord in ret['data']:
+                cid = ord['clOrdId']
+                after = ord['ordId']
+                if 'rrr1aa' in cid:
+                    dic.append(
+                        {
+                            "instId": ord['instId'],
+                            "ordId": ord['ordId']
+                        },
+                    )
+                    if len(dic) >= 20:
+                        re1 = tradeAPI.cancel_multiple_orders(dic)
+                        logger.info(f" 撤单：  {re1}")
+                        time.sleep(0.3)
+                        dic = []
+            if order_len < limit:
+                logger.info(f" 全部挂单完成")
+                break
+
         if len(dic) >= 1:
             re1 = tradeAPI.cancel_multiple_orders(dic)
             logger.info(f" 撤单：  {re1}")
             time.sleep(0.3)
+
+        logger.info(f"挂单总数量：{order_num}")
 
     def okex_trade_par(self, dic=[], coin='bnb', side='buy', price='-0.001', num=1, rsi_=10, ):
         api_key = self.api_key
@@ -318,7 +330,7 @@ class okex_rsi:
             # continue
             for rsi_, num1 in rsi_list.items():
                 rsi_ = int(rsi_)
-                if rsi_ <= 30 and nn > 0 :
+                if rsi_ <= 30 and nn > 0:
                     a = Decimal(str(num1 - nn))
                 else:
                     a = Decimal(str(num1))
@@ -430,6 +442,8 @@ class okex_rsi:
             time.sleep(0.2)
 
         logger.info(self.pos_info)
+        logger.info(f"持仓数量：{pos_list['data']}")
+        logger.info(f"止损订单数量：{algos['data']}")
 
     def acc(self):
         ##资金划转
