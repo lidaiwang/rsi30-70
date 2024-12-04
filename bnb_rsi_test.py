@@ -157,6 +157,8 @@ class okex_rsi:
 
         return df.iloc[limit1 - 1], df.iloc[limit1 - 2]
 
+    pos_info = {}
+
     def okex_can(self):
         api_key = self.api_key
         secret_key = self.secret_key
@@ -166,6 +168,16 @@ class okex_rsi:
 
         logger.info(f"  未完成订单 ： {ret} {len(ret)} ")
 
+        re3 = tradeAPI.get_position_risk()
+        for pos1 in re3:
+            if pos1['positionAmt'] == '':
+                continue
+            symbol = pos1['symbol']
+            positionAmt = float(pos1['positionAmt'])
+            sy = symbol.replace('USDT', '').lower()
+            self.pos_info[sy] = abs(positionAmt)
+
+        logger.debug(f"  仓位信息 ： {self.pos_info} ")
         # logger.info(ret)
         dic = []
         for ord in ret:
@@ -295,7 +307,6 @@ class okex_rsi:
         self.okex_can()
 
         dic = []
-        nn = self.nn
         for coin, init_num in self.coin_list.items():
             ##每次启动的时候  设置仓位杠杆
             if self.ff:
@@ -314,11 +325,19 @@ class okex_rsi:
             c_num = init_num['num']
             c_value = init_num['value'] if 'value' in init_num else 0
             amt_p = init_num['amt_p'] if 'amt_p' in init_num else 0
-            for rsi_, num1 in rsi_list.items():
-                if c_value > 0:
-                    c_num = round(c_value / float(open_price), amt_p)
-                    # logger.info(f"{c_value} {open_price} {amt_p} {c_num}")
 
+            if c_value > 0:
+                c_num = round(c_value / float(open_price), amt_p)
+
+            nn = self.nn
+            pos_num = self.pos_info[coin] if coin in self.pos_info else 0
+            if pos_num < c_num * 25:
+                nn = 0
+                logger.info(f" {coin} {pos_num} {init_num}仓位数量太少-尽量买入")
+            logger.info(f" {coin} nn:{nn} {c_num}  {last_RSI} {open_price} dict: {self.pos_info}")
+
+
+            for rsi_, num1 in rsi_list.items():
                 rsi_ = int(rsi_)
                 if rsi_ <= 30:
                     a = Decimal(str(num1 - nn))
