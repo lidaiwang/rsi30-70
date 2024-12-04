@@ -308,7 +308,7 @@ class okex_rsi:
 
             nn = self.nn
             pos_num = self.pos_info[coin] if coin in self.pos_info else 0
-            if pos_num < init_num * 50:
+            if pos_num < init_num * 37:
                 nn = 0
                 logger.info(f" {coin} {pos_num} {init_num}仓位数量太少-尽量买入")
 
