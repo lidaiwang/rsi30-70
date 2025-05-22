@@ -119,7 +119,7 @@ class okex_rsi:
                 df.loc[index, 'RSI'] = rsi
 
                 for rr1 in rsi_list:
-                    rsi_ = int(rr1)
+                    rsi_ = float(rr1)
                     rsi30 = self.rsi_to(rsi_, rsi_s, s_1, s_2, close_1)
                     df.loc[index, 'RSI_' + str(rr1)] = rsi30
 
@@ -331,7 +331,8 @@ class okex_rsi:
 
             # continue
             for rsi_, num1 in rsi_list.items():
-                rsi_ = int(rsi_)
+                rsi_1 = rsi_
+                rsi_ = float(rsi_)
                 if rsi_ <= 30 and nn > 0:
                     a = Decimal(str(num1 - nn))
                 else:
@@ -343,7 +344,12 @@ class okex_rsi:
                 if float(num) <= 0:
                     continue
 
-                rsi_price = re1['RSI_' + str(rsi_)]
+                try:
+                    rsi_price = re1['RSI_' + str(rsi_1)]
+                except Exception as e:
+                    logger.error(e)
+                    continue
+
                 ## 当前的rsi对应的价格 和开盘价格小于千n  就跳过这个价格
                 diff_p = abs(float(rsi_price) - float(open_price)) / float(open_price)
                 if diff_p < 0.0019 or diff_p > 0.15:
