@@ -548,6 +548,7 @@ class okex_rsi:
 ## ps -ef | grep "python3 okx_rsi"  | grep -v grep | awk '{print $2}' | xargs kill -9
 
 ## ps -ef | grep "python3 okx_rsi"  | grep -v grep | awk '{print $2}' | xargs kill -9 && nohup  python3 okx_rsi.py  whil  >> okx_rsi_test.log   2>&1 &
+## ps -ef | grep "python3 bnb_rsi"  | grep -v grep | awk '{print $2}' | xargs kill -9 && nohup  python3 bnb_rsi.py  whil  >> bnb_rsi_test.log   2>&1 &
 
 len_ = len(sys.argv)
 if len_ >= 2:
