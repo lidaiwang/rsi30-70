@@ -1,7 +1,7 @@
 import okx.Trade as Trade
 import okx.MarketData as MarketData
 import okx.Account as Account
-import okx.Earning as Earning
+import okx.Finance.Savings as finance_savings
 import okx.Funding as Funding
 from loguru import logger
 import pandas as pd
@@ -470,7 +470,7 @@ class okex_rsi:
         availBal = float(re1['data'][0]['details'][0]['availBal'])
         logger.info(f"可用资金USDT {availBal}")
 
-        Earning11 = Earning.EarningAPI(api_key, secret_key, passphrase, False, flag, debug=False, domain=self.okex_path)
+        Earning11 = finance_savings.SavingsAPI(api_key, secret_key, passphrase, False, flag, debug=False, domain=self.okex_path)
         re2 = Earning11.get_saving_balance(ccy='USDT')
         if re2['code'] != '0':
             logger.info("获取赚币失败")
