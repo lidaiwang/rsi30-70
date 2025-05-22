@@ -1,6 +1,8 @@
 import okx.Trade as Trade
 import okx.MarketData as MarketData
 import okx.Account as Account
+import okx.Earning as Earning
+import okx.Funding as Funding
 from loguru import logger
 import pandas as pd
 from pandas import DataFrame
@@ -13,8 +15,7 @@ import sys
 import requests
 from decimal import Decimal, getcontext
 import json
-from binance.um_futures import UMFutures
-
+import traceback
 
 class okex_rsi:
     ## K线时间
@@ -26,6 +27,7 @@ class okex_rsi:
             d_t = time.strftime("%Y-%m-%d %H:%M:%S", timeArray)
 
             it[4] = float(it[4])
+            it[1] = float(it[1])
             it.append(d_t)
 
             ##要删掉最后一个没有结束的
@@ -127,138 +129,125 @@ class okex_rsi:
 
     ##业务综合
     def get_k_line(self, coin='link', bar='5m'):
-        instId = (coin + 'USDT').upper()
-        limit1 = 30
-        url = f'{self.okex_path}/fapi/v1/klines?symbol={instId}&interval=5m&limit={limit1}'
-
+        # client = MarketData.MarketAPI(debug=True)
+        instId = (coin + '-USDT-SWAP').upper()
+        # re = client.get_candlesticks(instId=instId, bar=bar, limit=300)
+        limit_num = 30
+        url = f'{self.okex_path}/api/v5/market/candles?instId={instId}&bar=5m&limit={limit_num}'
         s = requests.session()
         s.keep_alive = False
         re1 = s.get(url)
         re = re1.json()
 
-        time.sleep(0.5)
+        time.sleep(0.4)
 
-        data1 = re
+        data1 = re['data']
         data1 = self.k_line_date(data1)
 
         len1 = len(data1)
-        if len1 < limit1 - 1:
+        if len1 < limit_num - 1:
             logger.info(f" {coin} {bar}  {len1}  {instId} 不够数量  {re}")
             return [], []
 
-        df = DataFrame(data=data1,
-                       columns=['time', 'open', 'high', 'low', 'close', 'a', 'b', 'c', 'confirm', 'd_t2', 'dd', 'tt',
-                                'd_t'])
-        df = df[['time', 'open', 'high', 'low', 'close', 'd_t']]
+        df = DataFrame(data=data1, columns=['time', 'open', 'high', 'low', 'close', 'a', 'b', 'c', 'confirm', 'd_t'])
+        df = df[['time', 'open', 'high', 'low', 'close', 'confirm', 'd_t']]
         df = df.sort_values('time', ascending=True)
-
         df = df.set_index('d_t')
+
+        if coin in ['sats']:
+            df['close'] = df['close'] * 1000000
+            df['open'] = df['open'] * 1000000
+
         df = self.RSI2(df)
 
-        return df.iloc[limit1 - 1], df.iloc[limit1 - 2]
-
-    pos_info = {}
+        return df.iloc[limit_num - 1], df.iloc[limit_num - 2]
 
     def okex_can(self):
         api_key = self.api_key
         secret_key = self.secret_key
+        passphrase = self.passphrase
 
-        tradeAPI = UMFutures(api_key, secret_key)
-        ret = tradeAPI.get_orders()
+        flag = "0"  # live trading: 0, demo trading: 1
+        tradeAPI = Trade.TradeAPI(api_key, secret_key, passphrase, False, flag, debug=False, domain=self.okex_path)
 
-        logger.info(f"  未完成订单 ： {ret} {len(ret)} ")
-
-        re3 = tradeAPI.get_position_risk()
-        for pos1 in re3:
-            if pos1['positionAmt'] == '':
-                continue
-            symbol = pos1['symbol']
-            positionAmt = float(pos1['positionAmt'])
-            if positionAmt == 0:
-                continue
-            sy = symbol.replace('USDT', '').lower()
-            sy = sy.replace('USDC', '').lower()
-
-            self.pos_info[sy] = abs(positionAmt)
-
-        logger.debug(f"  仓位信息 ： {self.pos_info} ")
-        # logger.info(ret)
         dic = []
-        for ord in ret:
-            cid = ord['orderId']
-            symbol = ord['symbol']
-            timeInForce = ord['timeInForce']
-            clientOrderId = ord['clientOrderId']
-            ## 挂单
-            if timeInForce != 'GTX':
-                continue
-            ## rrr1aa
-            if 'rrr1aa' not in clientOrderId:
-                continue
+        after = ''
+        order_num = 0
+        while True:
+            limit = 100
+            ret = tradeAPI.get_order_list(ordType='post_only', limit=limit, after=after)
+            order_len = len(ret['data'])
+            order_num += order_len
+            logger.info(f"挂单数量：{order_len}")
 
-            re55 = tradeAPI.cancel_order(symbol, cid)
-            logger.info(f"  取消订单 {cid}： {re55}")
+            for ord in ret['data']:
+                cid = ord['clOrdId']
+                after = ord['ordId']
+                if 'rrr1aa' in cid:
+                    dic.append(
+                        {
+                            "instId": ord['instId'],
+                            "ordId": ord['ordId']
+                        },
+                    )
+                    if len(dic) >= 20:
+                        re1 = tradeAPI.cancel_multiple_orders(dic)
+                        logger.info(f" 撤单：  {re1}")
+                        time.sleep(0.3)
+                        dic = []
+            if order_len < limit:
+                logger.info(f" 全部挂单完成")
+                break
 
-    def okex_trade_par(self, dic=[], coin='bnb', side='buy', price='-0.001', num=1, rsi_=10, c_price=0):
+        if len(dic) >= 1:
+            re1 = tradeAPI.cancel_multiple_orders(dic)
+            logger.info(f" 撤单：  {re1}")
+            time.sleep(0.3)
+
+        logger.info(f"挂单总数量：{order_num}")
+
+    def okex_trade_par(self, dic=[], coin='bnb', side='buy', price='-0.001', num=1, rsi_=10, ):
         api_key = self.api_key
         secret_key = self.secret_key
-        tradeAPI = UMFutures(api_key, secret_key)
+        passphrase = self.passphrase
+        flag = "0"  # live trading: 0, demo trading: 1
+        tradeAPI = Trade.TradeAPI(api_key, secret_key, passphrase, False, flag, debug=False, domain=self.okex_path)
 
         logger.error(len(dic))
 
         ### 分段 集中下单
-        if len(dic) >= 5 or (coin == '' and len(dic) >= 1) :
-            logger.info(f'批量 下单参数 {coin}   {dic}')
-            logger.info(f'   批量  下单     ')
-            re = tradeAPI.new_batch_order(dic)
-            # logger.info(f"参数 {dic}")
-            logger.info(f'批量批量 下单返回 {coin}   {re}')
+        if len(dic) >= 20 or (coin == '' and len(dic) >= 1):
+            logger.info(f'下单参数 {coin}   {dic}')
+            logger.info(f'     下单     ')
+            re = tradeAPI.place_multiple_orders(dic)
+            logger.info(f'下单返回 {coin}   {re}')
             time.sleep(0.3)
             del dic[:]
 
         if coin == '':
             return
 
-        if coin.upper() == "DEFI":
-            instId = (coin + 'USDT').upper()
-        else:
-            instId = (coin + 'USDC').upper()
-        # num = 0.01
+        instId = (coin + '-USDT-SWAP').upper()
 
         posSide = 'long'
         tdMode = 'isolated'
         cid1 = ''.join(random.choices(string.ascii_lowercase, k=10))
         clOrdId = 'rrr1aa' + (coin.upper()) + cid1 + str(rsi_).upper()
 
-        price = round(float(price), c_price)
-        price = str(price)
-
-        num = str(num)
-
         par = {
-            'newClientOrderId': clOrdId,
-            'symbol': instId,
-            # 'positionSide': tdMode,
-            'side': side.upper(),
-            'type': 'LIMIT',
-            'price': price,
-            'quantity': num,
-            'positionSide': posSide,
-            'timeInForce': 'GTX',
+            'clOrdId': clOrdId,
+            'instId': instId,
+            'tdMode': tdMode,
+            'side': side,
+            'ordType': 'post_only',
+            'px': price,
+            'sz': num,
+            'posSide': posSide,
+            'tag': "672dc5c5e4c6SUDE",
         }
-        # dic.append(par)
-
-        try:
-            logger.info(f'下单参数 {coin}   {par}')
-            re4 = tradeAPI.new_order(**par)
-            logger.info(f'下单返回 {coin}   {re4}')
-            del dic[:]
-        except Exception as e:
-            logger.error(f"下单异常 {coin}   {e}")
-            time.sleep(0.2)
+        dic.append(par)
 
     def gg1(self, coin):
-        return
         api_key = self.api_key
         secret_key = self.secret_key
         passphrase = self.passphrase
@@ -266,39 +255,38 @@ class okex_rsi:
         flag = "0"  # live trading: 0, demo trading: 1
         tradeAPI = Account.AccountAPI(api_key, secret_key, passphrase, False, flag, debug=False, domain=self.okex_path)
         if coin in ['eth', 'btc']:
-            lever = 7
-            instId = (coin + '-USD-SWAP').upper()
+            lever = 10
         else:
             lever = 5
+        try:
             instId = (coin + '-USDT-SWAP').upper()
+            re = tradeAPI.set_leverage(instId=instId, lever=lever, mgnMode='isolated', posSide='long')
+            logger.info(f"  杠杆设置 ： {re}")
+            time.sleep(0.2)
+        except Exception as e:
+            logger.error(e)
 
-        re = tradeAPI.set_leverage(instId=instId, lever=lever, mgnMode='isolated', posSide='long')
-        logger.info(f"  杠杆设置 ： {re}")
-        time.sleep(0.2)
-
-    okex_path = ' https://fapi.binance.com'
-
+    okex_path = 'https://www.okx.com'
     api_key = None
     secret_key = None
     passphrase = None
     coin_list = None
     rsi_list = None
-    nn = None
 
     def __init__(self):
         ## defi
         config_fil = './config.json'
         with open(config_fil, 'r') as f:
             data = json.load(f)
-            config = data['binance']
+            config = data['okx']
 
             self.api_key = config['api_key']
             self.secret_key = config['secret_key']
             self.passphrase = config['passphrase']
 
             self.coin_list = config['coin_list']
-
             self.rsi_list = data['rsi_list']
+
             self.nn = data['nn']
 
     ff = True
@@ -309,12 +297,13 @@ class okex_rsi:
         logger.info(" ########  ########  ########  ########  ########  ######## ")
         logger.info(" ########  ########  ########  ########  ########  ######## ")
 
+        coin_list = self.coin_list
         rsi_list = self.rsi_list
 
         self.okex_can()
 
         dic = []
-        for coin, init_num in self.coin_list.items():
+        for coin, init_num in coin_list.items():
             ##每次启动的时候  设置仓位杠杆
             if self.ff:
                 self.gg1(coin)
@@ -322,50 +311,46 @@ class okex_rsi:
             ##返回最后两个单元  re1是最后一个单元  re2是倒数第二个单元
             ## re1是没有完成的单元  结束时间是大于当前时间
             re1, re2 = self.get_k_line(coin, '5m')
+            # logger.info(f" {coin} {re1} {re2}")
+            # break
 
             if type(re1) == type([]):
                 continue
             last_RSI = re2['RSI']
             open_price = re1['open']
 
-            c_price = init_num['price']
-            c_num = init_num['num']
-            c_value = init_num['value'] if 'value' in init_num else 0
-            amt_p = init_num['amt_p'] if 'amt_p' in init_num else 0
-
-            if c_value > 0:
-                c_num = round(c_value / float(open_price), amt_p)
-
             nn = self.nn
             pos_num = self.pos_info[coin] if coin in self.pos_info else 0
-            if pos_num < c_num * 150:
+            if pos_num < init_num * 150:
                 nn = 0
                 logger.info(f" {coin} {pos_num} {init_num}仓位数量太少-尽量买入")
-            logger.info(f" {coin} nn:{nn} 单次下单：{c_num} 持仓：{pos_num} dict: {self.pos_info}")
 
+            # logger.info(f" {coin} {init_num} {nn} {last_RSI} {open_price} dict: {self.pos_info}")
+            logger.info(f" {coin} nn:{nn} 单次下单：{init_num} 持仓：{pos_num} dict: {self.pos_info}")
 
+            # continue
             for rsi_, num1 in rsi_list.items():
                 rsi_ = int(rsi_)
-                if rsi_ <= 30:
+                if rsi_ <= 30 and nn > 0:
                     a = Decimal(str(num1 - nn))
                 else:
                     a = Decimal(str(num1))
-                b = Decimal(str(c_num))
+
+                b = Decimal(str(init_num))
                 num = str(a * b)
+
                 if float(num) <= 0:
-                    logger.info(f" {coin} {rsi_} {num1} {a} {b} {num}数量为0 跳过{open_price}")
                     continue
 
                 rsi_price = re1['RSI_' + str(rsi_)]
-
                 ## 当前的rsi对应的价格 和开盘价格小于千n  就跳过这个价格
                 diff_p = abs(float(rsi_price) - float(open_price)) / float(open_price)
-                if diff_p < 0.0015 or diff_p > 0.15:
+                if diff_p < 0.0019 or diff_p > 0.15:
                     logger.info(
-                        f"当前价格和开盘价格相差太小-跳过{coin} {rsi_} diff_p{diff_p}  open_price {open_price}  rsi_price {rsi_price}")
+                        f"价格相差太小-跳过{coin}{rsi_} open_price:{open_price} rsi_price:{rsi_price} diff_p{diff_p}  ")
                     continue
-
                 ## 买单
+                side = ''
                 if rsi_ <= 30:
                     ## 如果上次的rsi 小于 当前的rsi就跳过
                     if rsi_ > last_RSI:
@@ -376,11 +361,18 @@ class okex_rsi:
                     ##卖单
                     side = 'sell'
 
-                self.okex_trade_par(dic, coin, side, rsi_price, num, rsi_, c_price)
+                if coin in ['sats']:
+                    bb1 = float(rsi_price) / 1000000
+                    rsi_price = f"{bb1:.15f}"
+
+                self.okex_trade_par(dic, coin, side, rsi_price, num, rsi_)
+            # break
 
         self.okex_trade_par(dic, '')
 
         self.ff = False
+
+    pos_info = {}
 
     def zhisun(self):
         api_key = self.api_key
@@ -403,6 +395,7 @@ class okex_rsi:
             algoId = alg['algoId']
             tag = alg['tag']
 
+            ## 非api订单不取消
             if 'rrr1aa' not in tag:
                 # break
                 continue
@@ -425,10 +418,18 @@ class okex_rsi:
             instId = pos['instId']
             liqPx = pos['liqPx']
             mgnMode = pos['mgnMode']
+            pos_size = pos['pos']
 
+            # self.pos_info[instId] = pos_size
+
+            ## 全仓 没有止损价格
             if mgnMode == 'cross' or liqPx == '':
                 logger.info(f" {instId}  {mgnMode} {liqPx} 跳过 不添加止损")
                 continue
+
+            if mgnMode == 'isolated' and '-USDT-' in instId:
+                sy = (instId.split('-')[0]).lower()
+                self.pos_info[sy] = float(pos_size)
 
             cid1 = ''.join(random.choices(string.ascii_lowercase, k=9))
             tag = 'rrr1aa' + cid1
@@ -441,8 +442,72 @@ class okex_rsi:
             logger.info(f"止损 下单 {instId}  {liqPx}  {re1}")
             time.sleep(0.2)
 
+        logger.info(self.pos_info)
+        logger.info(f"持仓数量：{pos_list['data']}")
+        logger.info(f"止损订单数量：{algos['data']}")
+
+    def acc(self):
+        ##资金划转
+        api_key = self.api_key
+        secret_key = self.secret_key
+        passphrase = self.passphrase
+
+        flag = "0"  # live trading: 0, demo trading: 1
+        Account11 = Account.AccountAPI(api_key, secret_key, passphrase, False, flag, debug=False, domain=self.okex_path)
+        re1 = Account11.get_account_balance(ccy='USDT')
+
+        logger.info(re1)
+        if re1['code'] != '0':
+            logger.info("资金获取失败")
+            return
+        availBal = float(re1['data'][0]['details'][0]['availBal'])
+        logger.info(f"可用资金USDT {availBal}")
+
+        Earning11 = Earning.EarningAPI(api_key, secret_key, passphrase, False, flag, debug=False, domain=self.okex_path)
+        re2 = Earning11.get_saving_balance(ccy='USDT')
+        if re2['code'] != '0':
+            logger.info("获取赚币失败")
+            return
+        
+
+        data_list = re2.get('data', [])  # 如果 'data' 不存在，返回空列表
+        first_item = data_list[0] if data_list else {}  # 如果列表不为空，取第一个元素，否则返回空字典
+        amt = float(first_item.get('amt', 0))
+
+        logger.info(f"赚币金额USDT {amt}")
+
+        ## 大于500  划转出其他  剩余350
+        ## 小于200  划转进来100 剩余300 
+        if availBal > 500:
+            tr_amt = int(availBal - 350)
+            ##划出
+            Funding111 = Funding.FundingAPI(api_key, secret_key, passphrase, False, flag, debug=False,
+                                            domain=self.okex_path)
+
+            re11 = Funding111.funds_transfer(ccy='USDT', amt=tr_amt, from_='18', to='6')
+            logger.info(f"划出USDT:{tr_amt} {re11}")
+
+            time.sleep(1)
+
+            re122 = Earning11.savings_purchase_redemption(ccy='USDT', amt=tr_amt, side='purchase', rate='0.01')
+            logger.info(f"申购USDT:{tr_amt} {re122}")
+
+        if availBal < 200:
+            tr_amt = 150
+            if amt < 150:
+                tr_amt = int(amt)
+
+            Funding111 = Funding.FundingAPI(api_key, secret_key, passphrase, False, flag, debug=False,
+                                            domain=self.okex_path)
+
+            re122 = Earning11.savings_purchase_redemption(ccy='USDT', amt=tr_amt, side='redempt')
+            logger.info(f"赎回USDT:{tr_amt} {re122}")
+            time.sleep(1)
+            re11 = Funding111.funds_transfer(ccy='USDT', amt=tr_amt, from_='6', to='18')
+            logger.info(f"划入USDT:{tr_amt} {re11}")
+
     def whil(self):
-        time2 = time.time()
+        time2 = 0
 
         while True:
             time1 = int(time.time())
@@ -450,27 +515,32 @@ class okex_rsi:
             ##logger.info(yu_time)
 
             time.sleep(1)
+
             if yu_time in [10, 3, 4, 5, 6, 7]:
                 try:
                     self.loop()
+                    time.sleep(5)
+                    continue
                 except Exception as e:
-                    logger.error(f"loop 异常 {e}")
-
-                time.sleep(5)
-                continue
+                    logger.error(e)
+                    traceback.print_exc()
+                    pass
 
             # 18分钟
-            if time1 - time2 > 18 * 60:
+            if time1 - time2 > 8 * 60:
                 time2 = time1
-
                 try:
-                    # self.zhisun()
-                    pass
+                    self.zhisun()
+                    self.acc()
                 except Exception as e:
-                    logger.error(f"loop 异常 {e}")
+                    logger.error(e)
+                    traceback.print_exc()
+                    pass
 
 
-## nohup  python3 bnb_rsi_test.py  whil  >> bnb_rsi_test.log   2>&1 &
+## ps -ef | grep "python3 okx_rsi"  | grep -v grep | awk '{print $2}' | xargs kill -9
+
+## ps -ef | grep "python3 okx_rsi"  | grep -v grep | awk '{print $2}' | xargs kill -9 && nohup  python3 okx_rsi.py  whil  >> okx_rsi_test.log   2>&1 &
 
 len_ = len(sys.argv)
 if len_ >= 2:
