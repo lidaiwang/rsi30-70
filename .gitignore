@@ -9,6 +9,7 @@ test*
 ./src/idea
 *.pyc:
 *.pyc
+*.log
 **/*.pyc
 config.json
 config.json.copy
