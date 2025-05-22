@@ -229,6 +229,7 @@ class okex_rsi:
         tdMode = 'isolated'
         cid1 = ''.join(random.choices(string.ascii_lowercase, k=10))
         clOrdId = 'rrr1aa' + (coin.upper()) + cid1 + str(rsi_).upper()
+        clOrdId = clOrdId.replace('.', '')
 
         price = round(float(price), c_price)
         price = str(price)
