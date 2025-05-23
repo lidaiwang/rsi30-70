@@ -352,9 +352,9 @@ class okex_rsi:
 
                 ## 当前的rsi对应的价格 和开盘价格小于千n  就跳过这个价格
                 diff_p = abs(float(rsi_price) - float(open_price)) / float(open_price)
-                if diff_p < 0.0019 or diff_p > 0.15:
+                if diff_p < 0.0019 or diff_p > 0.2:
                     logger.info(
-                        f"价格相差太小-跳过{coin}{rsi_} open_price:{open_price} rsi_price:{rsi_price} diff_p{diff_p}  ")
+                        f"当前价格和开盘价格相差太小或者太小-跳过{coin}{rsi_} open_price:{open_price} rsi_price:{rsi_price} diff_p{diff_p}  ")
                     continue
                 ## 买单
                 side = ''
