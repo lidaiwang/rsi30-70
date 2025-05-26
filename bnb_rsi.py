@@ -301,6 +301,7 @@ class okex_rsi:
 
             self.rsi_list = data['rsi_list']
             self.nn = data['nn']
+            self.max_pos = data['max_pos']
 
     ff = True
 
@@ -338,8 +339,9 @@ class okex_rsi:
                 c_num = round(c_value / float(open_price), amt_p)
 
             nn = self.nn
+            max_pos = self.max_pos
             pos_num = self.pos_info[coin] if coin in self.pos_info else 0
-            if pos_num < c_num * 150:
+            if pos_num < c_num * max_pos:
                 nn = 0
                 logger.info(f" {coin} {pos_num} {init_num}仓位数量太少-尽量买入")
             logger.info(f" {coin} nn:{nn} 单次下单：{c_num} 持仓：{pos_num} dict: {self.pos_info}")
