@@ -210,7 +210,7 @@ class okex_rsi:
         if len(dic) >= 5 or (coin == '' and len(dic) >= 1) :
             try:
                 logger.info(f'批量 下单参数 {coin}   {dic}')
-                logger.info(f'   批量  下单     ')
+                logger.info(f'   批量  下单   {len(dic)}  ')
                 re = tradeAPI.new_batch_order(batchOrders = dic)
                 # logger.info(f"参数 {dic}")
                 logger.info(f'批量批量 下单返回 {coin}   {re}')
