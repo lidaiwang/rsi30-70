@@ -254,16 +254,16 @@ class okex_rsi:
             'timeInForce': 'GTX',
         }
         dic.append(json.dumps(par))
-        dic.append(par)
+        # dic.append(par)
 
-        # try:
-        #     logger.info(f'下单参数 {coin}   {par}')
-        #     re4 = tradeAPI.new_batch_order(batchOrders=dic)
-        #     logger.info(f'下单返回 {coin}   {re4}')
-        #     del dic[:]
-        # except Exception as e:
-        #     logger.error(f"下单异常 {coin}   {e}")
-        #     time.sleep(0.2)
+        try:
+            logger.info(f'下单参数 {coin}   {par}')
+            re4 = tradeAPI.new_order(**par)
+            logger.info(f'下单返回 {coin}   {re4}')
+            del dic[:]
+        except Exception as e:
+            logger.error(f"下单异常 {coin}   {e}")
+            time.sleep(0.2)
 
     def gg1(self, coin):
         return
