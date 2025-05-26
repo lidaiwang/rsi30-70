@@ -343,7 +343,7 @@ class okex_rsi:
             pos_num = self.pos_info[coin] if coin in self.pos_info else 0
             if pos_num < c_num * max_pos:
                 nn = 0
-                logger.info(f" {coin} {pos_num} {init_num}仓位数量太少-尽量买入")
+                logger.info(f" {coin} pos_num{pos_num}  max_pos{max_pos} init_num{init_num}仓位数量太少-尽量买入")
             logger.info(f" {coin} nn:{nn} 单次下单：{c_num} 持仓：{pos_num} dict: {self.pos_info}")
 
 
