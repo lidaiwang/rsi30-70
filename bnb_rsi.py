@@ -1,3 +1,5 @@
+import traceback
+
 import okx.Trade as Trade
 import okx.MarketData as MarketData
 import okx.Account as Account
@@ -216,6 +218,7 @@ class okex_rsi:
                 time.sleep(0.3)
                 del dic[:]
             except Exception as e:
+                traceback.print_exc()
                 logger.error(f"批量下单异常 {coin}   {e}")
                 time.sleep(0.2)
                 del dic[:]
