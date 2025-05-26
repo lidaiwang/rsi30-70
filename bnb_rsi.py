@@ -254,6 +254,7 @@ class okex_rsi:
             'timeInForce': 'GTX',
         }
         dic.append(json.dumps(par))
+        dic.append(par)
 
         # try:
         #     logger.info(f'下单参数 {coin}   {par}')
