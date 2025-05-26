@@ -199,7 +199,7 @@ class okex_rsi:
             re55 = tradeAPI.cancel_order(symbol, cid)
             logger.info(f"  取消订单 {cid}： {re55}")
 
-    def okex_trade_par(self, dic=[], coin='bnb', side='buy', price='-0.001', num=1, rsi_=10, c_price=0):
+    def bnb_trade_par(self, dic=[], coin='bnb', side='buy', price='-0.001', num=1, rsi_=10, c_price=0):
         api_key = self.api_key
         secret_key = self.secret_key
         tradeAPI = UMFutures(api_key, secret_key)
@@ -208,13 +208,17 @@ class okex_rsi:
 
         ### 分段 集中下单
         if len(dic) >= 5 or (coin == '' and len(dic) >= 1) :
-            logger.info(f'批量 下单参数 {coin}   {dic}')
-            logger.info(f'   批量  下单     ')
-            re = tradeAPI.new_batch_order(dic)
-            # logger.info(f"参数 {dic}")
-            logger.info(f'批量批量 下单返回 {coin}   {re}')
-            time.sleep(0.3)
-            del dic[:]
+            try:
+                logger.info(f'批量 下单参数 {coin}   {dic}')
+                logger.info(f'   批量  下单     ')
+                re = tradeAPI.new_batch_order(batchOrders = dic)
+                # logger.info(f"参数 {dic}")
+                logger.info(f'批量批量 下单返回 {coin}   {re}')
+                time.sleep(0.3)
+                del dic[:]
+            except Exception as e:
+                logger.error(f"批量下单异常 {coin}   {e}")
+                time.sleep(0.2)
 
         if coin == '':
             return
@@ -233,7 +237,6 @@ class okex_rsi:
 
         price = round(float(price), c_price)
         price = str(price)
-
         num = str(num)
 
         par = {
@@ -247,16 +250,16 @@ class okex_rsi:
             'positionSide': posSide,
             'timeInForce': 'GTX',
         }
-        # dic.append(par)
+        dic.append(par)
 
-        try:
-            logger.info(f'下单参数 {coin}   {par}')
-            re4 = tradeAPI.new_order(**par)
-            logger.info(f'下单返回 {coin}   {re4}')
-            del dic[:]
-        except Exception as e:
-            logger.error(f"下单异常 {coin}   {e}")
-            time.sleep(0.2)
+        # try:
+        #     logger.info(f'下单参数 {coin}   {par}')
+        #     re4 = tradeAPI.new_batch_order(batchOrders=dic)
+        #     logger.info(f'下单返回 {coin}   {re4}')
+        #     del dic[:]
+        # except Exception as e:
+        #     logger.error(f"下单异常 {coin}   {e}")
+        #     time.sleep(0.2)
 
     def gg1(self, coin):
         return
@@ -385,9 +388,9 @@ class okex_rsi:
                     ##卖单
                     side = 'sell'
 
-                self.okex_trade_par(dic, coin, side, rsi_price, num, rsi_, c_price)
+                self.bnb_trade_par(dic, coin, side, rsi_price, num, rsi_, c_price)
 
-        self.okex_trade_par(dic, '')
+        self.bnb_trade_par(dic, '')
 
         self.ff = False
 
