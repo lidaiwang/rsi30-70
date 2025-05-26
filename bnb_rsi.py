@@ -212,13 +212,13 @@ class okex_rsi:
                 logger.info(f'批量 下单参数 {coin}   {dic}')
                 logger.info(f'   批量  下单   {len(dic)}  ')
                 re = tradeAPI.new_batch_order(batchOrders = dic)
-                # logger.info(f"参数 {dic}")
                 logger.info(f'批量批量 下单返回 {coin}   {re}')
                 time.sleep(0.3)
                 del dic[:]
             except Exception as e:
                 logger.error(f"批量下单异常 {coin}   {e}")
                 time.sleep(0.2)
+                del dic[:]
 
         if coin == '':
             return
@@ -250,7 +250,7 @@ class okex_rsi:
             'positionSide': posSide,
             'timeInForce': 'GTX',
         }
-        dic.append(par)
+        dic.append(json.dumps(par))
 
         # try:
         #     logger.info(f'下单参数 {coin}   {par}')
