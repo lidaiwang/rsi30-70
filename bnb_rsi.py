@@ -253,7 +253,7 @@ class okex_rsi:
             'positionSide': posSide,
             'timeInForce': 'GTX',
         }
-        dic.append(json.dumps(par))
+        # dic.append(json.dumps(par))
         # dic.append(par)
 
         try:
