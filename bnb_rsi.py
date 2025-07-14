@@ -209,11 +209,11 @@ class okex_rsi:
         logger.error(len(dic))
 
         ### 分段 集中下单
-        if len(dic) >= 5 or (coin == '' and len(dic) >= 1) :
+        if len(dic) >= 5 or (coin == '' and len(dic) >= 1):
             try:
                 logger.info(f'批量 下单参数 {coin}   {dic}')
                 logger.info(f'   批量  下单   {len(dic)}  ')
-                re = tradeAPI.new_batch_order(batchOrders = dic)
+                re = tradeAPI.new_batch_order(batchOrders=dic)
                 logger.info(f'批量批量 下单返回 {coin}   {re}')
                 time.sleep(0.3)
                 del dic[:]
@@ -226,11 +226,13 @@ class okex_rsi:
         if coin == '':
             return
 
-        if coin.upper() in ["DEFI" , "BTCDOM"]:
+        if coin.upper() in ["DEFI", "BTCDOM"]:
             instId = (coin + 'USDT').upper()
         else:
             instId = (coin + 'USDC').upper()
         # num = 0.01
+
+        self.set_c(instId)
 
         posSide = 'long'
         tdMode = 'isolated'
@@ -353,7 +355,6 @@ class okex_rsi:
                 logger.info(f" {coin} pos_num{pos_num}  max_pos{max_pos} init_num{init_num}仓位数量太少-尽量买入")
             logger.info(f" {coin} nn:{nn} 单次下单：{c_num} 持仓：{pos_num} dict: {self.pos_info}")
 
-
             for rsi_, num1 in rsi_list.items():
                 rsi_1 = rsi_
                 rsi_ = float(rsi_)
@@ -397,6 +398,31 @@ class okex_rsi:
         self.bnb_trade_par(dic, '')
 
         self.ff = False
+
+    set_c_dict = {}
+
+    def set_c(self, instId):
+        api_key = self.api_key
+        secret_key = self.secret_key
+        tradeAPI = UMFutures(api_key, secret_key)
+
+        if instId in tradeAPI:
+            logger.info(f" {instId}  存在")
+            return
+
+            ## 调整成全仓模式
+        try:
+            re1 = tradeAPI.change_margin_type(symbol=instId, marginType="ISOLATED")
+            logger.info(f" {instId}  全仓模式 {re1}")
+        except Exception as e:
+            logger.error(e)
+        try:
+            re1 = tradeAPI.change_leverage(instId, 5)
+            logger.info(f" {instId}  杠杆 5 {re1}")
+        except Exception as e:
+            logger.error(e)
+
+        self.set_c_dict[instId] = 1
 
     def zhisun(self):
         api_key = self.api_key
@@ -498,4 +524,3 @@ if len_ >= 2:
         getattr(class_, func)()
     else:
         logger.info("no fun")
-
