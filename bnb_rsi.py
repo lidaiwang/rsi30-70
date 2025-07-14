@@ -226,7 +226,7 @@ class okex_rsi:
         if coin == '':
             return
 
-        if coin.upper() == "DEFI":
+        if coin.upper() in ["DEFI" , "BTCDOM"]:
             instId = (coin + 'USDT').upper()
         else:
             instId = (coin + 'USDC').upper()
