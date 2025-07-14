@@ -406,7 +406,7 @@ class okex_rsi:
         secret_key = self.secret_key
         tradeAPI = UMFutures(api_key, secret_key)
 
-        if instId in tradeAPI:
+        if instId in self.set_c_dict:
             logger.info(f" {instId}  存在")
             return
 
